@@ -11,8 +11,8 @@ object Constants {
     // 隕石設定
     const val METEORITE_SPAWN_RATE = 2 // 隕石生成的機率 (每 100 幀中的次數)
     const val METEORITE_MIN_SPEED_Y = 10f
-    const val METEORITE_MAX_SPEED_Y = 25f
-    const val METEORITE_MAX_SPEED_X = 10f // 隕石隨機水平移動速度
+    const val METEORITE_MAX_SPEED_Y = 20f
+    const val METEORITE_MAX_SPEED_X = 8f // 隕石隨機水平移動速度
 
     // 控制按鈕大小 (佔螢幕寬度的比例)
     const val BUTTON_SIZE_RATIO = 0.10f

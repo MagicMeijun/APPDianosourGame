@@ -109,9 +109,9 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
             }
 
             GameState.PAUSED -> {
-                // 暫停運作：等待 3 秒計時
-                if (System.currentTimeMillis() - gameOverTimerStart >= 3000) {
-                    // 3 秒結束，切換到顯示分數畫面
+                // 暫停運作：等待 2 秒計時
+                if (System.currentTimeMillis() - gameOverTimerStart >= 2000) {
+                    // 2 秒結束，切換到顯示分數畫面
                     gameState = GameState.SCORE_DISPLAY
                 }
             }
