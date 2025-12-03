@@ -1,11 +1,10 @@
-// ControlButtons.kt
-package com.example.yourgame
+package com.example.appdianosourgame
 
 import android.content.Context
 import android.graphics.*
 import android.view.MotionEvent
-import com.example.yourgame.R
-import com.example.yourgame.Constants.*
+import com.example.appdianosourgame.R
+import com.example.appdianosourgame.Constants // <-- 修正: 僅匯入 Constants 類別本身
 
 class ControlButtons(context: Context, screenWidth: Float, screenHeight: Float) {
 
@@ -18,10 +17,15 @@ class ControlButtons(context: Context, screenWidth: Float, screenHeight: Float) 
     private val rightBounds: RectF
     private val jumpBounds: RectF
 
+    // 用於追蹤當前是否有按鈕被按住 (處理多點觸控)
+    private val pressedPointers = mutableMapOf<Int, String>() // <Pointer ID, Button Name>
+
+
     init {
         // 載入並縮放圖檔
-        val buttonSize = screenWidth * BUTTON_SIZE_RATIO
-        val margin = screenWidth * BUTTON_MARGIN_RATIO
+        // 修正: 使用 Constants. 前綴訪問常數
+        val buttonSize = screenWidth * Constants.BUTTON_SIZE_RATIO
+        val margin = screenWidth * Constants.BUTTON_MARGIN_RATIO
         val targetSize = buttonSize.toInt()
         val bottomY = screenHeight - margin - buttonSize
 
@@ -41,41 +45,82 @@ class ControlButtons(context: Context, screenWidth: Float, screenHeight: Float) 
         jumpBounds = RectF(screenWidth - margin - buttonSize, bottomY, screenWidth - margin, bottomY + buttonSize)
     }
 
+    /**
+     * 處理觸控事件，並呼叫回調函數通知 GameView 進行角色操作
+     * @param event 觸控事件
+     * @param actionCallback 回調函數，傳回 "left", "right", "jump", 或 "stop"
+     */
     fun handleTouch(event: MotionEvent, actionCallback: (String) -> Unit) {
-        val x = event.x
-        val y = event.y
 
-        // 檢查多點觸控
-        for (i in 0 until event.pointerCount) {
-            val pointerX = event.getX(i)
-            val pointerY = event.getY(i)
+        // 取得當前的觸控索引 (Pointer Index) 和 ID
+        val pointerIndex = event.actionIndex
+        val pointerId = event.getPointerId(pointerIndex)
 
-            // 按下事件或移動事件時
-            if (event.actionMasked == MotionEvent.ACTION_DOWN || event.actionMasked == MotionEvent.ACTION_POINTER_DOWN || event.actionMasked == MotionEvent.ACTION_MOVE) {
-                if (leftBounds.contains(pointerX, pointerY)) {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                val x = event.getX(pointerIndex)
+                val y = event.getY(pointerIndex)
+
+                if (leftBounds.contains(x, y)) {
+                    pressedPointers[pointerId] = "left"
                     actionCallback("left")
-                } else if (rightBounds.contains(pointerX, pointerY)) {
+                } else if (rightBounds.contains(x, y)) {
+                    pressedPointers[pointerId] = "right"
                     actionCallback("right")
-                } else if (jumpBounds.contains(pointerX, pointerY)) {
-                    // 跳躍是單次事件，只需要在按下時觸發
-                    if (event.actionMasked == MotionEvent.ACTION_DOWN || event.actionMasked == MotionEvent.ACTION_POINTER_DOWN) {
-                        actionCallback("jump")
+                } else if (jumpBounds.contains(x, y)) {
+                    // Jump 是單次觸發，不需儲存狀態，直接呼叫
+                    actionCallback("jump")
+                }
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                // 處理移動：檢查是否有按鈕持續被按住
+                for (i in 0 until event.pointerCount) {
+                    val id = event.getPointerId(i)
+                    val x = event.getX(i)
+                    val y = event.getY(i)
+
+                    val currentPress = pressedPointers[id]
+
+                    if (currentPress == "left" && !leftBounds.contains(x, y)) {
+                        // 如果手指滑出邊界，釋放按鍵
+                        pressedPointers.remove(id)
+                        actionCallback("stop")
+                    } else if (currentPress == "right" && !rightBounds.contains(x, y)) {
+                        // 如果手指滑出邊界，釋放按鍵
+                        pressedPointers.remove(id)
+                        actionCallback("stop")
+                    }
+                }
+
+                // 檢查是否還有任何移動鍵被按住
+                val isStillMoving = pressedPointers.containsValue("left") || pressedPointers.containsValue("right")
+                if (!isStillMoving) {
+                    actionCallback("stop")
+                }
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                // 檢查被釋放的 ID 是否為 Left/Right 按鈕
+                val buttonReleased = pressedPointers.remove(pointerId)
+
+                if (buttonReleased == "left" || buttonReleased == "right") {
+                    // 如果釋放的是移動鍵，並且沒有其他移動鍵被按住，則發送 "stop"
+                    val isStillMoving = pressedPointers.containsValue("left") || pressedPointers.containsValue("right")
+                    if (!isStillMoving) {
+                        actionCallback("stop")
                     }
                 }
             }
         }
-
-        // 釋放事件時 (停止左右移動)
-        if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_POINTER_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
-            // 由於多點觸控，需要檢查哪個按鈕被釋放了。
-            // 這裡簡單處理：只要有釋放就清除移動狀態 (更複雜的處理需要追蹤每個 Pointer ID)
-            actionCallback("stop")
-        }
     }
 
     fun draw(canvas: Canvas?) {
+        // 繪製 Left Button
         canvas?.drawBitmap(leftBitmap, leftBounds.left, leftBounds.top, null)
+        // 繪製 Right Button
         canvas?.drawBitmap(rightBitmap, rightBounds.left, rightBounds.top, null)
+        // 繪製 Jump Button
         canvas?.drawBitmap(jumpBitmap, jumpBounds.left, jumpBounds.top, null)
     }
 }

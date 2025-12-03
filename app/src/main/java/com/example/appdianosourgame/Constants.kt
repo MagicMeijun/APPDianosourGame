@@ -1,5 +1,5 @@
 // Constants.kt
-package com.example.yourgame // 替換成你的實際套件名稱
+package com.example.appdianosourgame // 替換成你的實際套件名稱
 
 object Constants {
     // 玩家設定

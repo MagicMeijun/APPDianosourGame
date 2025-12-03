@@ -1,10 +1,9 @@
-// Meteorite.kt
-package com.example.yourgame
+package com.example.appdianosourgame
 
 import android.content.Context
 import android.graphics.*
-import com.example.yourgame.R
-import com.example.yourgame.Constants.*
+import com.example.appdianosourgame.R
+import com.example.appdianosourgame.Constants // 修正: 僅匯入 Constants 類別本身
 import kotlin.random.Random
 
 class Meteorite(context: Context, private val screenWidth: Float, private val screenHeight: Float) {
@@ -27,7 +26,7 @@ class Meteorite(context: Context, private val screenWidth: Float, private val sc
     val bounds: RectF
 
     init {
-        // 載入所有隕石圖檔
+        // 載入所有隕石圖檔 (R.drawable.stone0~stone4)
         allFrames = listOf(
             BitmapFactory.decodeResource(context.resources, R.drawable.stone0),
             BitmapFactory.decodeResource(context.resources, R.drawable.stone1),
@@ -51,8 +50,9 @@ class Meteorite(context: Context, private val screenWidth: Float, private val sc
         y = -height // 從螢幕上方邊緣外產生
 
         // 隨機速度 (隨機方向落下)
-        dy = Random.nextFloat() * (METEORITE_MAX_SPEED_Y - METEORITE_MIN_SPEED_Y) + METEORITE_MIN_SPEED_Y
-        dx = Random.nextFloat() * (METEORITE_MAX_SPEED_X * 2) - METEORITE_MAX_SPEED_X // 範圍 [-MAX, MAX]
+        // 修正: 使用 Constants. 前綴訪問常數
+        dy = Random.nextFloat() * (Constants.METEORITE_MAX_SPEED_Y - Constants.METEORITE_MIN_SPEED_Y) + Constants.METEORITE_MIN_SPEED_Y
+        dx = Random.nextFloat() * (Constants.METEORITE_MAX_SPEED_X * 2) - Constants.METEORITE_MAX_SPEED_X // 範圍 [-MAX, MAX]
 
         bounds = RectF(x, y, x + width, y + height)
     }
@@ -62,18 +62,11 @@ class Meteorite(context: Context, private val screenWidth: Float, private val sc
         x += dx
         y += dy
 
-        // 邊界檢查 (可選：如果隕石飛出左右邊界，讓它從對向出現，或讓它消失)
-        // 這裡我們只讓它繼續移動直到落到螢幕底部
-
         // 更新碰撞邊界
         bounds.set(x, y, x + width, y + height)
     }
 
     fun draw(canvas: Canvas?) {
         canvas?.drawBitmap(bitmap, x, y, null)
-
-        // Debug 繪製碰撞邊界 (可選)
-        // val paint = Paint().apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = 5f }
-        // canvas?.drawRect(bounds, paint)
     }
 }

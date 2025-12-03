@@ -1,15 +1,16 @@
-// Player.kt
-package com.example.yourgame
+package com.example.appdianosourgame
 
 import android.content.Context
 import android.graphics.*
-import com.example.yourgame.R
-import com.example.yourgame.Constants.*
+import com.example.appdianosourgame.R
+import com.example.appdianosourgame.Constants // 修正: 僅匯入 Constants 類別本身
+import com.example.appdianosourgame.Meteorite
 
 class Player(context: Context, private val screenWidth: Float, private val screenHeight: Float) {
 
     // 角色所有圖檔
-    private val animationFrames: List<Bitmap>
+    // 修正: 將 val 改為 var 以允許後續的重新賦值
+    private var animationFrames: List<Bitmap>
     private val jumpFrame: Bitmap
 
     // 狀態變數
@@ -35,14 +36,21 @@ class Player(context: Context, private val screenWidth: Float, private val scree
     val bounds: RectF
 
     init {
-        // 載入所有圖檔
+        // 載入所有圖檔 (diano0~diano4)
         animationFrames = listOf(
             BitmapFactory.decodeResource(context.resources, R.drawable.diano0),
             BitmapFactory.decodeResource(context.resources, R.drawable.diano1),
             BitmapFactory.decodeResource(context.resources, R.drawable.diano2),
             BitmapFactory.decodeResource(context.resources, R.drawable.diano3)
         )
-        jumpFrame = BitmapFactory.decodeResource(context.resources, R.drawable.diano4)
+        // diano4 為跳躍圖檔
+        jumpFrame = BitmapFactory.decodeResource(context.resources, R.drawable.diano4).let { original ->
+            // 由於 jumpFrame 在 update 中使用，也需要縮放
+            val playerRatio = original.height.toFloat() / original.width.toFloat()
+            val targetWidth = (screenWidth * 0.1f).toInt()
+            val targetHeight = (targetWidth * playerRatio).toInt()
+            Bitmap.createScaledBitmap(original, targetWidth, targetHeight, true)
+        }
 
         // 設定角色尺寸（以第一個圖檔為準，並縮小至螢幕寬度的 10%）
         width = screenWidth * 0.1f
@@ -57,15 +65,14 @@ class Player(context: Context, private val screenWidth: Float, private val scree
         animationFrames.forEach { bmp ->
             scaledFrames.add(Bitmap.createScaledBitmap(bmp, targetWidth, targetHeight, true))
         }
-        animationFrames.clear()
-        animationFrames.addAll(scaledFrames)
 
-        // 處理跳躍圖檔的縮放
-        jumpFrame = Bitmap.createScaledBitmap(jumpFrame, targetWidth, targetHeight, true)
+        // 修正: 將原始 animationFrames 列表替換為 scaledFrames 列表
+        animationFrames = scaledFrames
 
         // 初始位置 (螢幕底部中央)
         x = (screenWidth / 2f) - (width / 2f)
-        y = screenHeight - height - 50f // 預留一點空間，模擬站在地面上
+        // 地面位置：距離底部 50f
+        y = screenHeight - height - 50f
 
         bounds = RectF(x, y, x + width, y + height)
     }
@@ -73,9 +80,9 @@ class Player(context: Context, private val screenWidth: Float, private val scree
     fun update(screenWidth: Float, screenHeight: Float) {
         // --- 1. 水平移動 ---
         if (isMovingLeft) {
-            x -= PLAYER_MOVE_SPEED
+            x -= Constants.PLAYER_MOVE_SPEED // 使用 Constants. 前綴訪問常數
         } else if (isMovingRight) {
-            x += PLAYER_MOVE_SPEED
+            x += Constants.PLAYER_MOVE_SPEED // 使用 Constants. 前綴訪問常數
         }
 
         // 邊界檢查
@@ -83,7 +90,7 @@ class Player(context: Context, private val screenWidth: Float, private val scree
 
         // --- 2. 垂直移動 (跳躍/重力) ---
         if (!isGrounded || isJumping) {
-            yVelocity += GRAVITY
+            yVelocity += Constants.GRAVITY // 使用 Constants. 前綴訪問常數
             y += yVelocity
             isGrounded = false
         }
@@ -99,7 +106,7 @@ class Player(context: Context, private val screenWidth: Float, private val scree
 
         // --- 3. 動畫更新 ---
         frameCounter++
-        if (frameCounter >= ANIMATION_FRAME_RATE) {
+        if (frameCounter >= Constants.ANIMATION_FRAME_RATE) { // 使用 Constants. 前綴訪問常數
             if (isMovingLeft || isMovingRight) {
                 currentFrameIndex = (currentFrameIndex + 1) % animationFrames.size
             } else {
@@ -116,7 +123,7 @@ class Player(context: Context, private val screenWidth: Float, private val scree
         if (isGrounded) {
             isJumping = true
             isGrounded = false
-            yVelocity = PLAYER_JUMP_SPEED
+            yVelocity = Constants.PLAYER_JUMP_SPEED // 使用 Constants. 前綴訪問常數
         }
     }
 
@@ -132,7 +139,7 @@ class Player(context: Context, private val screenWidth: Float, private val scree
             else -> animationFrames[0]
         }
 
-        // 左右移動時翻轉圖片 (可選，但讓角色更自然)
+        // 左右移動時翻轉圖片，使角色面朝移動方向
         val matrix = Matrix()
         if (isMovingLeft) {
             // 翻轉 Bitmap
@@ -140,14 +147,10 @@ class Player(context: Context, private val screenWidth: Float, private val scree
             // 將畫布往左移動一個寬度，才能讓圖檔繪製在正確的位置
             matrix.postTranslate(x + width, y)
         } else {
-            // 不翻轉
+            // 不翻轉 (或向右移動)
             matrix.postTranslate(x, y)
         }
 
         canvas?.drawBitmap(currentBitmap, matrix, null)
-
-        // Debug 繪製碰撞邊界 (可選)
-        // val paint = Paint().apply { color = Color.RED; style = Paint.Style.STROKE; strokeWidth = 5f }
-        // canvas?.drawRect(bounds, paint)
     }
 }

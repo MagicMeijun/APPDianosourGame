@@ -1,5 +1,4 @@
-// GameView.kt
-package com.example.yourgame
+package com.example.appdianosourgame
 
 import android.content.Context
 import android.graphics.*
@@ -7,7 +6,8 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import com.example.yourgame.Constants.*
+import com.example.appdianosourgame.R
+import com.example.appdianosourgame.Constants // 修正: 僅匯入 Constants 類別本身
 import kotlin.random.Random
 
 // 遊戲狀態
@@ -37,8 +37,8 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
     private var score = 0 // 隕石落到螢幕底部消失的次數
     private var gameOverTimerStart = 0L // 計時開始時間
 
-    // 背景圖檔 (ground)
-    private var backgroundBitmap: Bitmap? = null
+    // 背景圖檔 (已移除，使用純白色背景)
+    // private var backgroundBitmap: Bitmap? = null // 移除背景圖片相關宣告
 
     init {
         holder.addCallback(this)
@@ -51,9 +51,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         screenWidth = width.toFloat()
         screenHeight = height.toFloat()
 
-        // 載入和縮放背景圖
-        val originalBg = BitmapFactory.decodeResource(context.resources, R.drawable.ground)
-        backgroundBitmap = Bitmap.createScaledBitmap(originalBg, screenWidth.toInt(), screenHeight.toInt(), true)
+        // 移除載入和縮放背景圖的程式碼
 
         player = Player(context, screenWidth, screenHeight)
         controlButtons = ControlButtons(context, screenWidth, screenHeight)
@@ -72,7 +70,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         while (isPlaying) {
             update()
             draw()
-            // 可選：加入控制幀率的程式碼 (例如 Thread.sleep)
+            // 這裡可以加入控制幀率的程式碼，例如 Thread.sleep(16)
         }
     }
 
@@ -104,7 +102,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
                     if (player.collidesWith(m)) {
                         gameState = GameState.PAUSED
                         gameOverTimerStart = System.currentTimeMillis()
-                        // 碰撞後可以讓隕石從列表中移除或停止移動
+                        // 碰撞後讓隕石停止移動（因為遊戲暫停）
                         break
                     }
                 }
@@ -128,8 +126,8 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         if (surfaceHolder.surface.isValid) {
             canvas = surfaceHolder.lockCanvas()
 
-            // 繪製背景
-            backgroundBitmap?.let { canvas?.drawBitmap(it, 0f, 0f, null) }
+            // 繪製背景 (使用白色)
+            canvas?.drawColor(Color.WHITE)
 
             // 繪製遊戲物件
             player.draw(canvas)
@@ -148,8 +146,9 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
     }
 
     private fun drawScoreAndState(canvas: Canvas?) {
+        // 將分數文字顏色改為黑色，以便在白色背景上可見
         val paint = Paint().apply {
-            color = Color.WHITE
+            color = Color.BLACK
             textSize = 50f
             typeface = Typeface.DEFAULT_BOLD // 加粗字體
         }
@@ -173,6 +172,10 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
                 paint.textAlign = Paint.Align.CENTER
                 paint.textSize = 100f
                 canvas?.drawText("Score: $score", screenWidth / 2, screenHeight / 2, paint)
+
+                // 顯示重新開始提示
+                paint.textSize = 50f
+                canvas?.drawText("點擊螢幕重新開始", screenWidth / 2, screenHeight / 2 + 100, paint)
             }
         }
     }
@@ -180,7 +183,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
     // --- 隕石生成邏輯 ---
     private fun spawnMeteorite() {
         // 每幀以 METEORITE_SPAWN_RATE 的機率生成一個隕石
-        if (Random.nextInt(100) < METEORITE_SPAWN_RATE) {
+        if (Random.nextInt(100) < Constants.METEORITE_SPAWN_RATE) { // 使用 Constants. 前綴訪問常數
             meteorites.add(Meteorite(context, screenWidth, screenHeight))
         }
     }

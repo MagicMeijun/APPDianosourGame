@@ -1,5 +1,5 @@
 // MainActivity.kt
-package com.example.yourgame
+package com.example.appdianosourgame
 
 import android.app.Activity
 import android.os.Bundle
