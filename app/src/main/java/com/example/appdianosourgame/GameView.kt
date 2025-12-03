@@ -7,7 +7,7 @@ import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import com.example.appdianosourgame.R
-import com.example.appdianosourgame.Constants // 修正: 僅匯入 Constants 類別本身
+import com.example.appdianosourgame.Constants
 import kotlin.random.Random
 
 // 遊戲狀態
@@ -35,10 +35,11 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
     // 遊戲狀態與計分
     private var gameState = GameState.RUNNING
     private var score = 0 // 隕石落到螢幕底部消失的次數
-    private var gameOverTimerStart = 0L // 計時開始時間
+    private var gameOverTimerStart = 0L // 遊戲結束（碰撞）計時開始時間
 
-    // 背景圖檔 (已移除，使用純白色背景)
-    // private var backgroundBitmap: Bitmap? = null // 移除背景圖片相關宣告
+    // 遊戲時間相關變數
+    private var gameStartTime = 0L // 記錄遊戲開始的毫秒時間
+    private var totalSeconds = 0 // 當前累計秒數
 
     init {
         holder.addCallback(this)
@@ -50,8 +51,6 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         // 取得螢幕尺寸，初始化遊戲物件
         screenWidth = width.toFloat()
         screenHeight = height.toFloat()
-
-        // 移除載入和縮放背景圖的程式碼
 
         player = Player(context, screenWidth, screenHeight)
         controlButtons = ControlButtons(context, screenWidth, screenHeight)
@@ -79,6 +78,10 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
     private fun update() {
         when (gameState) {
             GameState.RUNNING -> {
+                // 更新遊戲時間
+                val currentTime = System.currentTimeMillis()
+                totalSeconds = ((currentTime - gameStartTime) / 1000).toInt()
+
                 // 1. 更新玩家位置
                 player.update(screenWidth, screenHeight)
 
@@ -109,9 +112,9 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
             }
 
             GameState.PAUSED -> {
-                // 暫停運作：等待 2 秒計時
+                // 暫停運作：等待 3 秒計時
                 if (System.currentTimeMillis() - gameOverTimerStart >= 2000) {
-                    // 2 秒結束，切換到顯示分數畫面
+                    // 3 秒結束，切換到顯示分數畫面
                     gameState = GameState.SCORE_DISPLAY
                 }
             }
@@ -145,6 +148,18 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         }
     }
 
+    // 【新增】根據分數取得對應的等級
+    private fun getGradeFromScore(score: Int): String {
+        return when {
+            score >= 86 -> "SSS"
+            score >= 66 -> "SS" // 大於等於 66 且小於 86
+            score >= 41 -> "S"  // 大於等於 41 且小於 66
+            score >= 26 -> "A"  // 大於等於 26 且小於 41
+            score >= 11 -> "B"  // 大於等於 11 且小於 26
+            else -> "C"         // 小於 11
+        }
+    }
+
     private fun drawScoreAndState(canvas: Canvas?) {
         // 將分數文字顏色改為黑色，以便在白色背景上可見
         val paint = Paint().apply {
@@ -155,8 +170,14 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
 
         when (gameState) {
             GameState.RUNNING -> {
+                // 左上角顯示累計秒數
+                paint.textAlign = Paint.Align.LEFT
+                paint.textSize = 70f
+                canvas?.drawText("${totalSeconds}s", screenWidth / 2 - 50, 70f, paint) // 顯示在頂部中間偏左一點
+
                 // 右上角顯示 Score: (分數)
                 paint.textAlign = Paint.Align.RIGHT
+                paint.textSize = 50f
                 canvas?.drawText("Score: $score", screenWidth - 20, 70f, paint)
             }
 
@@ -168,14 +189,24 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
             }
 
             GameState.SCORE_DISPLAY -> {
+                val grade = getGradeFromScore(score)
+
                 // 顯示最終分數
                 paint.textAlign = Paint.Align.CENTER
+                paint.textSize = 80f
+                canvas?.drawText("最終得分: $score", screenWidth / 2, screenHeight / 2 - 160, paint)
+
+                // 【新增】顯示等級
                 paint.textSize = 100f
-                canvas?.drawText("Score: $score", screenWidth / 2, screenHeight / 2, paint)
+                canvas?.drawText("等級: $grade", screenWidth / 2, screenHeight / 2 - 50, paint)
+
+                // 顯示生存時間
+                paint.textSize = 60f
+                canvas?.drawText("生存時間: ${totalSeconds}秒", screenWidth / 2, screenHeight / 2 + 50, paint)
 
                 // 顯示重新開始提示
-                paint.textSize = 50f
-                canvas?.drawText("點擊螢幕重新開始", screenWidth / 2, screenHeight / 2 + 100, paint)
+                paint.textSize = 40f
+                canvas?.drawText("點擊螢幕重新開始", screenWidth / 2, screenHeight / 2 + 150, paint)
             }
         }
     }
@@ -225,12 +256,18 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         score = 0
         meteorites.clear()
         player = Player(context, screenWidth, screenHeight) // 重新初始化玩家
+
+        // 重設時間
+        gameStartTime = System.currentTimeMillis()
+        totalSeconds = 0
+
         gameState = GameState.RUNNING
     }
 
     // 啟動/暫停遊戲迴圈
     private fun startGame() {
         isPlaying = true
+        gameStartTime = System.currentTimeMillis() // 設置遊戲開始時間
         gameThread = Thread(this)
         gameThread?.start()
     }
