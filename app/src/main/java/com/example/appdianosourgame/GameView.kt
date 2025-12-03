@@ -148,15 +148,27 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
         }
     }
 
-    // 【新增】根據分數取得對應的等級
+    // 根據分數取得對應的等級
     private fun getGradeFromScore(score: Int): String {
         return when {
             score >= 86 -> "SSS"
-            score >= 66 -> "SS" // 大於等於 66 且小於 86
-            score >= 41 -> "S"  // 大於等於 41 且小於 66
-            score >= 26 -> "A"  // 大於等於 26 且小於 41
-            score >= 11 -> "B"  // 大於等於 11 且小於 26
-            else -> "C"         // 小於 11
+            score >= 66 -> "SS"
+            score >= 41 -> "S"
+            score >= 26 -> "A"
+            score >= 11 -> "B"
+            else -> "C"
+        }
+    }
+
+    // 【新增】根據等級取得評語
+    private fun getFlavorTextFromGrade(grade: String): String {
+        return when (grade) {
+            "SSS" -> "(隕石：這恐龍...死不了)"
+            "SS" -> "(快到達神的境界了)"
+            "S" -> "(大意了沒有閃)"
+            "A" -> "(玩得不戳)"
+            "B" -> "(恐龍：你這個爛砲兵:D)"
+            else -> "(恐龍滅絕都你害的)" // C 級
         }
     }
 
@@ -190,23 +202,28 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
 
             GameState.SCORE_DISPLAY -> {
                 val grade = getGradeFromScore(score)
+                val flavorText = getFlavorTextFromGrade(grade)
 
-                // 顯示最終分數
+                // 1. 顯示最終得分
                 paint.textAlign = Paint.Align.CENTER
                 paint.textSize = 80f
-                canvas?.drawText("最終得分: $score", screenWidth / 2, screenHeight / 2 - 160, paint)
+                canvas?.drawText("最終得分: $score", screenWidth / 2, screenHeight / 2 - 180, paint)
 
-                // 【新增】顯示等級
+                // 2. 顯示等級
                 paint.textSize = 100f
-                canvas?.drawText("等級: $grade", screenWidth / 2, screenHeight / 2 - 50, paint)
+                canvas?.drawText("等級: $grade", screenWidth / 2, screenHeight / 2 - 80, paint)
 
-                // 顯示生存時間
+                // 3. 【新增】顯示評語 (較小字體)
+                paint.textSize = 50f
+                canvas?.drawText(flavorText, screenWidth / 2, screenHeight / 2 + 20, paint)
+
+                // 4. 顯示生存時間
                 paint.textSize = 60f
-                canvas?.drawText("生存時間: ${totalSeconds}秒", screenWidth / 2, screenHeight / 2 + 50, paint)
+                canvas?.drawText("生存時間: ${totalSeconds}秒", screenWidth / 2, screenHeight / 2 + 110, paint)
 
-                // 顯示重新開始提示
+                // 5. 顯示重新開始提示
                 paint.textSize = 40f
-                canvas?.drawText("點擊螢幕重新開始", screenWidth / 2, screenHeight / 2 + 150, paint)
+                canvas?.drawText("點擊螢幕重新開始", screenWidth / 2, screenHeight / 2 + 180, paint)
             }
         }
     }
@@ -214,7 +231,7 @@ class GameView(context: Context, attrs: AttributeSet? = null) :
     // --- 隕石生成邏輯 ---
     private fun spawnMeteorite() {
         // 每幀以 METEORITE_SPAWN_RATE 的機率生成一個隕石
-        if (Random.nextInt(100) < Constants.METEORITE_SPAWN_RATE) { // 使用 Constants. 前綴訪問常數
+        if (Random.nextInt(100) < Constants.METEORITE_SPAWN_RATE) {
             meteorites.add(Meteorite(context, screenWidth, screenHeight))
         }
     }

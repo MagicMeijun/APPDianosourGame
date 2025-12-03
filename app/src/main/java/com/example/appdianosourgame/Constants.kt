@@ -4,7 +4,7 @@ package com.example.appdianosourgame // 替換成你的實際套件名稱
 object Constants {
     // 玩家設定
     const val PLAYER_MOVE_SPEED = 15f
-    const val PLAYER_JUMP_SPEED = -45f // 負值代表向上
+    const val PLAYER_JUMP_SPEED = -60f // 負值代表向上
     const val GRAVITY = 3.5f
     const val ANIMATION_FRAME_RATE = 4 // 每幾幀切換一次角色動畫
 
