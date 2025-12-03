@@ -15,6 +15,6 @@ object Constants {
     const val METEORITE_MAX_SPEED_X = 10f // 隕石隨機水平移動速度
 
     // 控制按鈕大小 (佔螢幕寬度的比例)
-    const val BUTTON_SIZE_RATIO = 0.15f
+    const val BUTTON_SIZE_RATIO = 0.10f
     const val BUTTON_MARGIN_RATIO = 0.05f
 }
